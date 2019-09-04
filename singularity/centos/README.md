@@ -27,7 +27,7 @@ time sudo sh -c "./setup-host-and-build-container.sh intelmpi 2>&1 | tee /tmp/2-
 
 ```
 
-#### Step 6: Run Benchmarks
+#### Step 3: Run Benchmarks
 Run `benchmark-scripts/run-tf-sing-ucx-openmpi.sh` script. See below for usage
 ```
 cd ~/dl-containers/benchmark-scripts
