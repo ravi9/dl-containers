@@ -1,0 +1,65 @@
+Bootstrap: docker
+From: centos:latest
+
+%setup
+export SINGULARITY_SHELL=/bin/bash
+
+%post -c /bin/bash
+# If your environment requires proxy to reach internet, then export the http, https proxy variables accordingly
+
+yum clean all
+rm -rf /var/cache/yum
+yum -y install epel-release
+yum -y install wget git
+
+mkdir -p /mnt/shared/
+chmod -R 777 /mnt/shared/
+
+cd /tmp/
+git clone https://github.com/ravi9/azure-hc-intel-tf.git
+cd /tmp/azure-hc-intel-tf/install-scripts
+
+# Install dev_tools, OFED, IPoIB, gcc 8.2, UCX, OpenMPI, miniconda, intel-tensorflow, horovod libraries
+./setup.sh openmpi container
+
+cd && rm -rf /tmp/azure-hc-intel-tf
+
+%environment
+
+export PATH=/opt/gcc-8.2.0/bin:$PATH
+export LD_LIBRARY_PATH=/opt/gcc-8.2.0/lib64:$LD_LIBRARY_PATH
+export CC=/opt/gcc-8.2.0/bin/gcc
+export GCC=/opt/gcc-8.2.0/bin/gcc
+
+export OMPI_PATH=/opt/openmpi-4.0.0
+export PATH=${OMPI_PATH}/bin:$PATH
+export LD_LIBRARY_PATH=${OMPI_PATH}/lib:$LD_LIBRARY_PATH
+export MANPATH=${OMPI_PATH}/share/man:$MANPATH
+export MPI_BIN=${OMPI_PATH}/bin
+export MPI_INCLUDE=${OMPI_PATH}/include
+export MPI_LIB=${OMPI_PATH}/lib
+export MPI_MAN=${OMPI_PATH}/share/man
+export MPI_HOME=${OMPI_PATH}
+
+export PATH=/opt/openmpi-4.0.0/bin:$PATH
+export LD_LIBRARY_PATH=/opt/openmpi-4.0.0/lib:$LD_LIBRARY_PATH
+export MANPATH=/opt/openmpi-4.0.0/share/man:$MANPATH
+export MPI_BIN=/opt/openmpi-4.0.0/bin
+export MPI_INCLUDE=/opt/openmpi-4.0.0/include
+export MPI_LIB=/opt/openmpi-4.0.0/lib
+export MPI_MAN=/opt/openmpi-4.0.0/share/man
+export MPI_HOME=/opt/openmpi-4.0.0
+
+export PATH=/opt/miniconda3/bin:$PATH
+
+%runscript
+echo "This is a Singularity image containing Intel optimized TensorFlow installation with Horovod, Intel-MPI, Lifabric"
+echo "Operating System: $(cat /etc/redhat-release)"
+echo "GCC: $(gcc --version)"
+echo "TensorFlow: $(pip show tensorflow --disable-pip-version-check | grep "^Version:" | awk '{print $NF}')"
+echo "MKL shared libs: $(ldd $(pip show tensorflow | grep Location | cut -d ":" -f2)/tensorflow/libtensorflow_framework.so | grep libmklml)"
+echo "IsMklEnabled: "
+python -c "import tensorflow as tf; print(tf.pywrap_tensorflow.IsMklEnabled())"
+echo "Horovod: $(pip show horovod --disable-pip-version-check | grep "^Version:" | awk '{print $NF}')"
+echo "OFED: $(ofed_info | grep MLNX_OFED)"
+echo "TensorFlow Benchmarks: /opt/tensorflow-benchmarks"
